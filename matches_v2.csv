@@ -1,4 +1,3 @@
-match_id,date,tournament,playerA,playerB,scoreA,scoreB,offline
 1,"2012-12-04",799,4,55,1,3,false
 2,"2012-12-03",11921,2,41,2,0,false
 3,"2012-12-03",11921,21,41,0,2,false

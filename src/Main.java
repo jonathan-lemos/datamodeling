@@ -101,7 +101,7 @@ public class Main {
 						"birthday DATE NOT NULL, " +
 						"game_race CHAR(1) NOT NULL, " +
 						"PRIMARY KEY (player_id));");
-		insertFromCsv(con, "players.csv", true, "players");
+		insertFromCsv(con, "players.csv", false, "players");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS teams (" +
@@ -110,7 +110,7 @@ public class Main {
 						"founded DATE NOT NULL, " +
 						"disbanded DATE, " +
 						"PRIMARY KEY (team_id));");
-		insertFromCsv(con, "teams.csv", true, "teams");
+		insertFromCsv(con, "teams.csv", false, "teams");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS members (" +
@@ -121,7 +121,7 @@ public class Main {
 						"PRIMARY KEY (player, start_date), " +
 						"FOREIGN KEY (player) REFERENCES players (player_id), " +
 						"FOREIGN KEY (team) REFERENCES teams (team_id));");
-		insertFromCsv(con, "members.csv", true, "members");
+		insertFromCsv(con, "members.csv", false, "members");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS tournaments (" +
@@ -130,7 +130,7 @@ public class Main {
 						"region CHAR(2), " +
 						"major BOOLEAN NOT NULL, " +
 						"PRIMARY KEY (tournament_id));");
-		insertFromCsv(con, "tournaments.csv", true, "tournaments");
+		insertFromCsv(con, "tournaments.csv", false, "tournaments");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS matches (" +
@@ -146,7 +146,7 @@ public class Main {
 						"FOREIGN KEY (tournament) REFERENCES tournaments (tournament_id), " +
 						"FOREIGN KEY (playerA) REFERENCES players (player_id), " +
 						"FOREIGN KEY (playerB) REFERENCES players (player_id));");
-		insertFromCsv(con, "matches_v2.csv", true, "matches");
+		insertFromCsv(con, "matches_v2.csv", false, "matches");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS earnings (" +
@@ -157,7 +157,7 @@ public class Main {
 						"PRIMARY KEY (tournament, player), " +
 						"FOREIGN KEY (tournament) REFERENCES tournaments (tournament_id), " +
 						"FOREIGN KEY (player) REFERENCES players (player_id));");
-		insertFromCsv(con, "earnings.csv", true, "earnings");
+		insertFromCsv(con, "earnings.csv", false, "earnings");
 	}
 
 	private static void query1(Connection con, int month, int year) throws SQLException {
