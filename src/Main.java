@@ -11,7 +11,7 @@ public class Main {
 	private final static String jdbcDriver = "com.mysql.jdbc.Driver";
 	private final static String jdbcUrl = "jdbc:mysql://localhost:3306";
 	private final static String jdbcUser = "root";
-	private final static String jdbcPassword = "toor";
+	private final static String jdbcPassword = "root";
 
 	private static String fmtDate() {
 		return fmtDate(new Date());
@@ -421,6 +421,6 @@ public class Main {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		// update(con, "DROP DATABASE " + jdbcDatabase);
+		update(con, "DROP DATABASE " + jdbcDatabase);
 	}
 }
