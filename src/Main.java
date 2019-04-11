@@ -378,8 +378,8 @@ public class Main {
 
 				switch (choice) {
 					case 1:
-						int month = readInt(sc, "Enter a month: ");
 						int year = readInt(sc, "Enter a year: ");
+						int month = readInt(sc, "Enter a month: ");
 						System.out.println();
 						query1(con, month, year);
 						break;
