@@ -62,7 +62,7 @@ public class Main {
 		}
 	}
 
-	private static void insertFromCsv(Connection con, String csvFname, boolean ignoreFirstLine, String tableName, String anyField) throws SQLException, IOException {
+	private static void insertFromCsv(Connection con, String csvFname, boolean ignoreFirstLine, String tableName) throws SQLException, IOException {
 		BufferedReader br = new BufferedReader(new FileReader(csvFname));
 
 		StringBuilder sb = new StringBuilder();
@@ -88,7 +88,7 @@ public class Main {
 		sb.deleteCharAt(sb.length() - 1);
 		br.close();
 
-		update(con, "INSERT INTO " + tableName + " VALUES " + sb.toString() + " ON DUPLICATE KEY UPDATE " + anyField + "=" + anyField + ";");
+		update(con, "INSERT INTO " + tableName + " VALUES " + sb.toString() + ";");
 	}
 
 	private static void createTables(Connection con) throws SQLException, IOException {
@@ -101,7 +101,7 @@ public class Main {
 						"birthday DATE NOT NULL, " +
 						"game_race CHAR(1) NOT NULL, " +
 						"PRIMARY KEY (player_id));");
-		insertFromCsv(con, "players.csv", true, "players", "player_id");
+		insertFromCsv(con, "players.csv", true, "players");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS teams (" +
@@ -110,7 +110,7 @@ public class Main {
 						"founded DATE NOT NULL, " +
 						"disbanded DATE, " +
 						"PRIMARY KEY (team_id));");
-		insertFromCsv(con, "teams.csv", true, "teams", "team_id");
+		insertFromCsv(con, "teams.csv", true, "teams");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS members (" +
@@ -121,7 +121,7 @@ public class Main {
 						"PRIMARY KEY (player, start_date), " +
 						"FOREIGN KEY (player) REFERENCES players (player_id), " +
 						"FOREIGN KEY (team) REFERENCES teams (team_id));");
-		insertFromCsv(con, "members.csv", true, "members", "player");
+		insertFromCsv(con, "members.csv", true, "members");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS tournaments (" +
@@ -130,7 +130,7 @@ public class Main {
 						"region CHAR(2), " +
 						"major BOOLEAN NOT NULL, " +
 						"PRIMARY KEY (tournament_id));");
-		insertFromCsv(con, "tournaments.csv", true, "tournaments", "tournament_id");
+		insertFromCsv(con, "tournaments.csv", true, "tournaments");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS matches (" +
@@ -146,7 +146,7 @@ public class Main {
 						"FOREIGN KEY (tournament) REFERENCES tournaments (tournament_id), " +
 						"FOREIGN KEY (playerA) REFERENCES players (player_id), " +
 						"FOREIGN KEY (playerB) REFERENCES players (player_id));");
-		insertFromCsv(con, "matches_v2.csv", true, "matches", "match_id");
+		insertFromCsv(con, "matches_v2.csv", true, "matches");
 
 		update(con,
 				"CREATE TABLE IF NOT EXISTS earnings (" +
@@ -157,7 +157,7 @@ public class Main {
 						"PRIMARY KEY (tournament, player), " +
 						"FOREIGN KEY (tournament) REFERENCES tournaments (tournament_id), " +
 						"FOREIGN KEY (player) REFERENCES players (player_id));");
-		insertFromCsv(con, "earnings.csv", true, "earnings", "tournament");
+		insertFromCsv(con, "earnings.csv", true, "earnings");
 	}
 
 	private static void query1(Connection con, int month, int year) throws SQLException {
@@ -179,12 +179,12 @@ public class Main {
 	}
 
 	private static void query2(Connection con, int player_id, int team_id) throws SQLException {
-		String curDate = "'" + new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+		String curDate = "'" + fmtDate() + "'";
 		ResultSet rs = query(con,
 				"SELECT * " +
 						"FROM members " +
-						"WHERE player_id = " + player_id + " " +
-						"AND team_id = " + team_id + ";"
+						"WHERE player = " + player_id + " " +
+						"AND team = " + team_id + ";"
 		);
 		if (rs.next()) {
 			System.out.println("Player " + player_id + " is already a member of team " + team_id);
@@ -192,10 +192,25 @@ public class Main {
 			return;
 		}
 		rs.close();
+
+		rs = query(con, "SELECT * FROM players WHERE player_id = " + player_id);
+		if (!rs.next()) {
+			System.out.println("No player exists with the id " + player_id);
+			return;
+		}
+		rs.close();
+
+		rs = query(con, "SELECT * FROM teams WHERE team_id = " + team_id);
+		if (!rs.next()) {
+			System.out.println("No team exists with the id " + team_id);
+			return;
+		}
+		rs.close();
+
 		if (update(con,
 				"UPDATE members " +
 						"SET end_date = " + curDate + " " +
-						"WHERE player_id = " + player_id + " " +
+						"WHERE player = " + player_id + " " +
 						"AND end_date IS NULL;"
 		) > 0) {
 			System.out.println("Player " + player_id + " departed from old team");
@@ -211,30 +226,24 @@ public class Main {
 		rs.close();
 	}
 
-	private static void query3(Connection con, int year) throws SQLException {
+	private static void query3(Connection con, String nationality, int year) throws SQLException {
 		ResultSet rs = query(con,
-				"SELECT real_name, birthday, nationality " +
+				"SELECT real_name, birthday " +
 						"FROM players " +
 						"WHERE YEAR(birthday) = " + year + " " +
-						"ORDER BY nationality ASC, real_name ASC;"
+						"AND nationality = '" + nationality + "';"
 		);
-		String cur = "";
 		System.out.println(String.format("%-25s%-20s", "Real Name", "Birthday"));
 		System.out.println(String.format("%-25s%-20s", "---------", "--------"));
 		while (rs.next()) {
-			String nat = rs.getString("nationality");
-			if (!nat.equals(cur)) {
-				cur = nat;
-				System.out.println("-----" + cur + "-----");
-			}
-			System.out.println(String.format("%-25s%-20s", rs.getString("real_name"), new SimpleDateFormat("yyyy-MM-dd").format(rs.getDate("birthday"))));
+			System.out.println(String.format("%-25s%-20s", rs.getString("real_name"), fmtDate(rs.getDate("birthday"))));
 		}
 		rs.close();
 	}
 
 	private static void query4(Connection con) throws SQLException {
 		ResultSet rs = query(con,
-				"SELECT q.tag, q.game_race" +
+				"SELECT q.tag, q.game_race " +
 						"FROM (" +
 						"SELECT p.player_id, p.tag, p.game_race, t.tournament_id, t.region, t.major, e.player, e.position " +
 						"FROM tournaments t " +
@@ -262,7 +271,7 @@ public class Main {
 
 	private static void query5(Connection con) throws SQLException {
 		ResultSet rs = query(con,
-				"SELECT p.tag, p.real_name " +
+				"SELECT p.tag, p.real_name, max(m.end_date) as ed " +
 						"FROM members m " +
 						"INNER JOIN teams t ON m.team = t.team_id and t.name = 'ROOT Gaming' " +
 						"INNER JOIN players p ON m.player = p.player_id " +
@@ -271,12 +280,13 @@ public class Main {
 						"ORDER BY player "
 		);
 
-		System.out.println(String.format("%-20s%-25s", "Tag", "Real Name"));
-		System.out.println(String.format("%-20s%-25s", "---", "---------"));
+		System.out.println(String.format("%-20s%-25s%-20s", "Tag", "Real Name", "Departed"));
+		System.out.println(String.format("%-20s%-25s%-20s", "---", "---------", "--------"));
 		while (rs.next()) {
 			String tag = rs.getString("tag");
 			String rn = rs.getString("real_name");
-			System.out.println(String.format("%-20s%-25s", tag, rn));
+			String ed = fmtDate(rs.getDate("ed"));
+			System.out.println(String.format("%-20s%-25s%-20s", tag, rn, ed));
 		}
 		rs.close();
 	}
@@ -345,59 +355,72 @@ public class Main {
 		}
 	}
 
-	public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException {
+	public static void main(String[] args) throws SQLException, ClassNotFoundException, IOException {
 		Scanner sc = new Scanner(System.in);
 		Connection con = makeConnection();
+		System.out.println("BIG DATA INSERTING...");
 		createTables(con);
-		while (true) {
-			System.out.println("1. Query 1");
-			System.out.println("2. Query 2");
-			System.out.println("3. Query 3");
-			System.out.println("4. Query 4");
-			System.out.println("5. Query 5");
-			System.out.println("6. Query 6");
-			System.out.println("7. Query 7");
-			System.out.println("8. Exit");
+		System.out.println("BIG DATA INSERTED!");
+		System.out.println();
 
-			int choice = readInt(sc, "Make a selection: ");
+		try {
+			while (true) {
+				System.out.println("1. Query 1");
+				System.out.println("2. Query 2");
+				System.out.println("3. Query 3");
+				System.out.println("4. Query 4");
+				System.out.println("5. Query 5");
+				System.out.println("6. Query 6");
+				System.out.println("7. Query 7");
+				System.out.println("8. Exit");
 
-			switch (choice) {
-				case 1:
-					int month = readInt(sc, "Enter a month: ");
-					int year = readInt(sc, "Enter a year: ");
-					System.out.println();
-					query1(con, month, year);
-					break;
-				case 2:
-					int player_id = readInt(sc, "Enter the player id: ");
-					int team_id = readInt(sc, "Enter the team id: ");
-					System.out.println();
-					query2(con, player_id, team_id);
-					break;
-				case 3:
-					query3(con, readInt(sc, "Enter a year: "));
-					break;
-				case 4:
-					query4(con);
-					break;
-				case 5:
-					query5(con);
-					break;
-				case 6:
-					query6(con);
-					break;
-				case 7:
-					query7(con);
-					break;
-				case 8:
-					return;
-				default:
-					System.out.println("Entry has to be between 1 and 7");
+				int choice = readInt(sc, "Make a selection: ");
+
+				switch (choice) {
+					case 1:
+						int month = readInt(sc, "Enter a month: ");
+						int year = readInt(sc, "Enter a year: ");
+						System.out.println();
+						query1(con, month, year);
+						break;
+					case 2:
+						int player_id = readInt(sc, "Enter the player id: ");
+						int team_id = readInt(sc, "Enter the team id: ");
+						System.out.println();
+						query2(con, player_id, team_id);
+						break;
+					case 3:
+						System.out.print("Enter a nationality: ");
+						String nationality = sc.nextLine();
+						query3(con, nationality, readInt(sc, "Enter a year: "));
+						break;
+					case 4:
+						query4(con);
+						break;
+					case 5:
+						query5(con);
+						break;
+					case 6:
+						query6(con);
+						break;
+					case 7:
+						query7(con);
+						break;
+					case 8:
+						return;
+					default:
+						System.out.println("Entry has to be between 1 and 7");
+				}
+				con.commit();
+				System.out.println();
+				System.out.print("Press ENTER to continue:");
+				sc.nextLine();
+				System.out.println();
 			}
-			System.out.println();
-			System.out.print("Press ENTER to continue:");
-			sc.nextLine();
-			System.out.println();
 		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		// update(con, "DROP DATABASE " + jdbcDatabase);
 	}
 }
