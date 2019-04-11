@@ -7,7 +7,7 @@ import java.util.Date;
 import java.util.Scanner;
 
 public class Main {
-	private final static String jdbcDatabase = "proj3";
+	private final static String jdbcDatabase = "PlayerDB_Assign4";
 	private final static String jdbcDriver = "com.mysql.jdbc.Driver";
 	private final static String jdbcUrl = "jdbc:mysql://localhost:3306";
 	private final static String jdbcUser = "root";
