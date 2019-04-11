@@ -407,6 +407,7 @@ public class Main {
 						query7(con);
 						break;
 					case 8:
+						update(con, "DROP DATABASE " + jdbcDatabase);
 						return;
 					default:
 						System.out.println("Entry has to be between 1 and 7");
